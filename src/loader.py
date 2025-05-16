@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from pandas import DataFrame
 class Loader(ABC):
     """
-    Base class for differents type of Datasets
+    Base class for different types of Datasets
     """
     def __init__(self) -> None:
         """Initialize base loader"""
