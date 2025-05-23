@@ -44,11 +44,11 @@ class StandardPrompt(GenericPrompter):
 
     def __call__(self, examples):
         inputs = [
-            'translate "' + example + '" to Italian: '
+            'Traduci "' + example + '" in Italiano Moderno'
             for example in examples["Sentence"]
         ]
         model_inputs = self.get_tokenizer()(
-            inputs, return_tensors="pt", padding=True, truncation=True, max_length=120
+            inputs, return_tensors="pt", padding=True, truncation=True, max_length=150
         )
         return model_inputs
 
@@ -130,10 +130,13 @@ class PromptModel:
         generated_ids = self.model.generate(
             input_ids=input_ids_tensor,
             attention_mask=attention_mask_tensor,
-            max_new_tokens=120,
+            max_new_tokens=512,
             do_sample=True,
-            top_k=10,
-            top_p=0.95,
+            top_k=100,            # aumento della diversità controllando le parole candidate
+            top_p=0.95,          # campionamento nucleus per ulteriori controlli sulla varietà
+            temperature=0.8,     # riduce la casualità e aumenta la coerenza
+            repetition_penalty=1.2,  # penalizza ripetizioni
+            num_return_sequences=1,  # numero di risposte generate
         )
 
         # Use the tokenizer stored in PromptModel directly
