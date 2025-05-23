@@ -48,6 +48,7 @@ pip3 install datasets
 # mnlp tools
 pip3 install nltk
 pip3 install bitsandbytes
+pip3 install sacremoses
 
 # install ml tools (and torch system)
 echo '[installing ML tools]'

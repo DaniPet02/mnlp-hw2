@@ -1,5 +1,6 @@
 # Import Datases to work with Transformers by Hugging-Face
 from abc import ABC, abstractmethod
+import json
 from pathlib import Path
 from typing import override
 from io import StringIO
@@ -10,8 +11,8 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel
 from prompts import baseline
-
-
+import time
+import os
 class EvaluationGride(BaseModel):
     short_comment: str
     proposed_traslation: str
@@ -37,6 +38,48 @@ class StandardPrompt(GenericPrompter):
     where each string is a prompt for the model.
     """
 
+    def __init__(self, base_tokenizer, max_tokens=120) -> None:
+        super().__init__(base_tokenizer)
+        self.max_tokens = max_tokens
+
+    def __call__(self, examples):
+        inputs = [
+            'translate "' + example + '" to Italian: '
+            for example in examples["Sentence"]
+        ]
+        model_inputs = self.get_tokenizer()(
+            inputs, return_tensors="pt", padding=True, truncation=True, max_length=120
+        )
+        return model_inputs
+
+class OpusPrompt(GenericPrompter):
+    """
+    standard_prompt function to create the input for the model
+    It takes a list of examples and returns a list of strings
+    where each string is a prompt for the model.
+    """
+
+    def __init__(self, base_tokenizer, max_tokens=120) -> None:
+        super().__init__(base_tokenizer)
+        self.max_tokens = max_tokens
+
+    def __call__(self, examples):
+        inputs = [
+            '>>ita<< ' + example
+            for example in examples["Sentence"]
+        ]
+        model_inputs = self.get_tokenizer()(
+            inputs, return_tensors="pt", padding=True, truncation=True, max_length=120
+        )
+        return model_inputs
+
+class LLMPrompt(GenericPrompter):
+    """
+    standard_prompt function to create the input for the model
+    It takes a list of examples and returns a list of strings
+    where each string is a prompt for the model.
+    """
+
     def __init__(self, base_tokenizer) -> None:
         super().__init__(base_tokenizer)
 
@@ -49,7 +92,6 @@ class StandardPrompt(GenericPrompter):
             inputs, return_tensors="pt", padding=True, truncation=True, max_length=120
         )
         return model_inputs
-
 
 class PromptModel:
     def __init__(self, model, prompter, device="cpu"):
@@ -72,7 +114,7 @@ class PromptModel:
         model = self.model.eval()
 
         with torch.no_grad():
-            model.to(self.device)
+            
             hf = hf.map(self.prompt, batched=True)
             hf = hf.map(self.promptSentence)
 
@@ -125,11 +167,30 @@ class GeminiJudge:
             model=self.model, config=self.config, contents=contents
         )
 
-        pd.read_json(StringIO(response.text)).to_json(self.log.joinpath("init.json"))
+        if self.log.joinpath("gemini_log.json").exists():
+            os.remove(self.log.joinpath("gemini_log.json"))
+        try:
+            pd.read_json(StringIO(response.text)).to_json(self.log.joinpath("gemini_log.json"))
+        except (json.JSONDecodeError, ValueError) as e:
+            error_log_path = self.log.joinpath(f"panic_gen{time.time():.f2}.txt")
+            with open(error_log_path, "w", encoding="utf-8") as f:
+                f.write("--- Errore di Parsing JSON ---\n")
+                f.write(f"Tipo di errore: {type(e).__name__}\n")
+                f.write("\n-----------------------------------------------------\n")
+      
 
     def judge(self, query: str):
         response = self.client.models.generate_content(
             model=self.model, config=self.config, contents=query
         )
+
+        try:
+            pd.read_json(StringIO(response.text)).to_json(self.log.joinpath("gemini_log.json"))
+        except (json.JSONDecodeError, ValueError) as e:
+            error_log_path = self.log.joinpath(f"panic_gen{time.time():.f2}.txt")
+            with open(error_log_path, "w", encoding="utf-8") as f:
+                f.write("--- Errore di Parsing JSON ---\n")
+                f.write(f"Tipo di errore: {type(e).__name__}\n")
+                f.write("\n-----------------------------------------------------\n")
 
         return response.text

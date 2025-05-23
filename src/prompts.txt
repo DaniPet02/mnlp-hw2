@@ -51,3 +51,23 @@ original sentence, still fluent and comprehensible, and could
 semantically acceptable
 5. Perfect translation. The translation is accurate, fluent, complete and
 coherent. It retained the original meaning as much as it could.
+
+messages = [
+    [
+        {
+            "role": "system",
+            "content": [{"type": "text", "text": "You are a helpful assistant."},]
+        },
+        {
+            "role": "user",
+            "content": [{"type": "text", "text": "Write a poem on Hugging Face, the company"},]
+        },
+    ],
+]
+inputs = tokenizer.apply_chat_template(
+    messages,
+    add_generation_prompt=True,
+    tokenize=True,
+    return_dict=True,
+    return_tensors="pt",
+).to(model.device).to(torch.bfloat16)
