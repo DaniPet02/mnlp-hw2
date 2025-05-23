@@ -92,6 +92,121 @@ class LLMPrompt(GenericPrompter):
             inputs, return_tensors="pt", padding=True, truncation=True, max_length=120
         )
         return model_inputs
+    
+
+class AuthorPrompt(GenericPrompter):
+    """
+    author_prompt function to create the input for the model
+    It takes a list of examples and returns a list of strings
+    where each string is a prompt for the model.
+    """
+
+    def __init__(self, base_tokenizer) -> None:
+        super().__init__(base_tokenizer)
+
+    def __call__(self, examples):
+        inputs = [
+            'Knowing that ' + example["Author"] + 'wrote this, '
+            'translate "' + example["Sentence"] + '" to Italian: '
+            for example in examples
+        ]
+        model_inputs = self.get_tokenizer()(
+            inputs, return_tensors="pt", padding=True, truncation=True, max_length=120
+        )
+        return model_inputs
+
+
+class QuestionPrompt(GenericPrompter):
+    """
+    question_prompt function to create the input for the model
+    It takes a list of examples and returns a list of strings
+    where each string is a prompt for the model.
+    """
+
+    def __init__(self, base_tokenizer) -> None:
+        super().__init__(base_tokenizer)
+
+    def __call__(self, examples):
+        inputs = [
+            'Can you express this sentence: "' + example["Sentence"] + '" in a more colloquial style? '
+            for example in examples
+        ]
+        model_inputs = self.get_tokenizer()(
+            inputs, return_tensors="pt", padding=True, truncation=True, max_length=120
+        )
+        return model_inputs
+
+
+class Few_Shot_Prompt(GenericPrompter):
+    '''
+    few_shot_prompt function to create the input for the model
+    It takes a list of examples and returns a list of strings
+    where each string is a prompt for the model.
+    '''
+
+    def __init__(self, base_tokenizer) -> None:
+        super().__init__(base_tokenizer)
+        
+    def __call__(self, examples):
+        inputs = [
+            'Example 1: Archaic: "Caron, non ti crucciare: vuolsi così colà dove si puote ciò che si vuole, e più non dimandare." \n'
+            'Modern: "Caronte, non ti agitare: si vuole così lassù dove è possibile tutto ciò che si vuole, quindi non dire altro." \n'
+            'Example 2: Archaic: "Amor, ch\'al cor gentil ratto s\'apprende prese costui de la bella persona che mi fu tolta; e \'l modo ancor m\'offende." \n'
+            'Modern: "L\'amore, che si attacca subito al cuore nobile, colpì costui per il bel corpo che mi fu tolto, e il modo ancora mi addolora." \n'
+            'Now translate: Archaic: "' + example + '" to Modern: '
+            for example in examples["Sentence"]
+        ]
+        model_inputs = self.get_tokenizer()(
+            inputs, return_tensors="pt", padding=True, truncation=True, max_length=1024
+        )
+        return model_inputs
+    
+
+class Period_Region_Prompt(GenericPrompter):
+    """
+    period_region_prompt function to create the input for the model
+    It takes a list of examples and returns a list of strings
+    where each string is a prompt for the model.
+    """
+
+    def __init__(self, base_tokenizer) -> None:
+        super().__init__(base_tokenizer)
+
+    def __call__(self, examples):
+        dates = examples["Date"]
+        regions = examples["Region"]
+        sentences = examples["Sentence"]
+        inputs = [
+            'This sentence: "' + "{sentence}" + '" was written in ' + "{date}" + 
+            ' in the "' + "{region}" + '" region. Translate it to Modern Italian: '
+            for date, region, sentence in zip(dates, regions, sentences)
+        ]
+        model_inputs = self.get_tokenizer()(
+            inputs, return_tensors="pt", padding=True, truncation=True, max_length=120
+        )
+        return model_inputs
+
+
+class StylePrompt(GenericPrompter):
+    """
+    style_prompt function to create the input for the model
+    It takes a list of examples and returns a list of strings
+    where each string is a prompt for the model.
+    """
+
+    def __init__(self, base_tokenizer) -> None:
+        super().__init__(base_tokenizer)
+
+    def __call__(self, examples):
+        inputs = [
+            'The following sentence represents an example from the Dolce Stil Novo (sweet new style) literary movement, developed in the 13th and 14th century in Italy: "'
+            + example + '" Translate it to modern Italian: '
+            for example in examples["Sentence"]
+        ]
+        model_inputs = self.get_tokenizer()(
+            inputs, return_tensors="pt", padding=True, truncation=True, max_length=240
+        )
+        return model_inputs
 
 class PromptModel:
     def __init__(self, model, prompter, device="cpu"):
