@@ -54,7 +54,7 @@ pip3 install sacremoses
 echo '[installing ML tools]'
 nvidia-smi >> /dev/null
 if [[ -x "$(command -v nvidia-smi)" ]] ; then
-	pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126 #require install giga-byte
+	pip3 install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128 #require install giga-byte
 else
 	pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 fi	
@@ -66,13 +66,20 @@ pip3 install evaluate
 pip3 install accelerate
 pip3 install hf_xet
 pip3 install 'accelerate>=0.26.0'
-
+pip3 install sentencepiece
 # install tools to Accelerate large LLMs 
 pip3 install peft
 pip3 install --upgrade transformers safetensors torch
 
 # install metrics for LLM model
-
+pip3 install sacrebleu
+pip3 install rouge_score
+pip3 install meteor
+pip3 install absl-py
 # Gemini API
 
 pip3 install -q google-genai
+
+# other usefull utils
+
+pip3 install ipywidgets
