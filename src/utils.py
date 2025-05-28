@@ -1,10 +1,13 @@
 import os
 from matplotlib import pyplot as plt
+import pandas as pd
+import json
 # Import Datases to work with Transformers by Hugging-Face
 
 # Imports for Transformers
-import matplotlib.pyplot as plt
 import os
+import torch
+from tqdm.auto import tqdm
 from transformers import TrainerCallback
 
 class Report(TrainerCallback):
@@ -105,3 +108,87 @@ class Report(TrainerCallback):
                 plt.savefig(os.path.join(self.plotting_dir, f"{metric_name}.png"))
                 # plt.show()
                 plt.close()
+
+def evaluate_and_save(
+    model,
+    judge,
+    tokenizer,
+    tokenized_dataset,
+    output_prefix: str,
+    device: str = "cuda",
+    batch_size: int = 32,
+    generate_params: dict = {}
+):
+    """
+    Generate translations for each example in `tokenized_dataset`, compare against
+    `original_dataset`, and save a TSV with columns ["Original", "Translation(Generated)", "Evaluation"].
+
+    Args:
+        model           : a HuggingFace seq2seq model
+        tokenizer       : corresponding tokenizer
+        tokenized_dataset : a Dataset with fields "input_ids" & "attention_mask"
+        original_dataset  : the original (un-tokenized) dataset with field "Sentence"
+        output_prefix   : prefix for the output file; final name will be
+                          f"{output_prefix}({model.__class__.__name__}).tsv"
+        device          : device to run on, e.g. "cuda" or "cpu"
+        batch_size      : generation batch size
+        generate_params : additional kwargs for `model.generate()`
+    Returns:
+        pandas.DataFrame with columns ["Original", "Translation(Generated)", "Evaluation"]
+    """
+    # Prep
+    model = model.eval()
+    
+    tokenized_dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])
+    loader = torch.utils.data.DataLoader(tokenized_dataset, batch_size=batch_size)
+
+    # Results container
+    df = pd.DataFrame(columns=["Original", "Translation(Generated)", "Evaluation"])
+
+   
+    for idx, batch in tqdm(enumerate(loader, 1), dynamic_ncols=True, leave=True):
+        #print(batch["input_ids"])
+        input_ids = batch["input_ids"].to(device)
+        attention_mask = batch["attention_mask"].to(device)
+
+        with torch.no_grad():
+            preds = model.generate(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                max_new_tokens=1024
+                #**generate_params
+            )
+            gen_translation = tokenizer.batch_decode(preds, skip_special_tokens=True)
+            print(gen_translation)
+            evals = judge.judge(gen_translation)
+
+        # Decode & append
+        for s, pred, eval in zip(batch, gen_translation, evals):
+            src_sentence = s["Sentence"]
+            df.loc[len(df)] = [src_sentence, gen_translation, eval]
+           
+
+    # Save to JSONLINE
+    filename = f"{output_prefix}({model.__class__.__name__}).jsonl"
+    jsonline(filename)
+
+    return df
+
+
+
+def jsonline(df, nome_file_output):
+    """
+    Salva un DataFrame Pandas in un file JSON Lines (JSONL).
+
+    Args:
+        df (pd.DataFrame): Il DataFrame da salvare.
+        nome_file_output (str): Il nome del file in cui salvare il DataFrame (es. 'dati.jsonl').
+    """
+    try:
+        with open(nome_file_output, 'w', encoding='utf-8') as f:
+            for record in df.to_dict(orient='records'):
+                json_record = json.dumps(record, ensure_ascii=False)
+                f.write(json_record + '\n')
+        print(f"DataFrame salvato con successo in '{nome_file_output}'")
+    except Exception as e:
+        print(f"Si è verificato un errore durante il salvataggio del DataFrame: {e}")
