@@ -1,4 +1,5 @@
 import os
+from typing import Dict
 from matplotlib import pyplot as plt
 import pandas as pd
 import json
@@ -111,13 +112,13 @@ class Report(TrainerCallback):
 
 def evaluate_and_save(
     model,
-    judge,
+   
     tokenizer,
     tokenized_dataset,
     output_prefix: str,
     device: str = "cuda",
     batch_size: int = 32,
-    generate_params: dict = {}
+    config:Dict[str,int|str]|None=None
 ):
     """
     Generate translations for each example in `tokenized_dataset`, compare against
@@ -137,40 +138,52 @@ def evaluate_and_save(
         pandas.DataFrame with columns ["Original", "Translation(Generated)", "Evaluation"]
     """
     # Prep
-    model = model.eval()
+    model = model.eval() 
     
     tokenized_dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])
     loader = torch.utils.data.DataLoader(tokenized_dataset, batch_size=batch_size)
 
     # Results container
-    df = pd.DataFrame(columns=["Original", "Translation(Generated)", "Evaluation"])
+    df = pd.DataFrame(columns=["Original", "Translation(Generated)"])
 
    
-    for idx, batch in tqdm(enumerate(loader, 1), dynamic_ncols=True, leave=True):
+    for idx, batch in tqdm(enumerate(loader, 1), dynamic_ncols=True, leave=True, total=len(loader)):
         #print(batch["input_ids"])
         input_ids = batch["input_ids"].to(device)
         attention_mask = batch["attention_mask"].to(device)
 
         with torch.no_grad():
-            preds = model.generate(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                max_new_tokens=1024
-                #**generate_params
-            )
+            if config:
+                preds = model.generate(
+                    input_ids=input_ids,
+                    attention_mask=attention_mask,
+                    **config
+                )
+            else:
+                preds = model.generate(
+                    input_ids=input_ids,
+                    attention_mask=attention_mask,
+                )
+
             gen_translation = tokenizer.batch_decode(preds, skip_special_tokens=True)
+            input_sentence  = tokenizer.batch_decode(input_ids, skip_special_tokens=True)
             print(gen_translation)
-            evals = judge.judge(gen_translation)
+            
 
         # Decode & append
-        for s, pred, eval in zip(batch, gen_translation, evals):
-            src_sentence = s["Sentence"]
-            df.loc[len(df)] = [src_sentence, gen_translation, eval]
+        for src_sentence, pred in zip(input_sentence, gen_translation):
+            if len(pred) > len(src_sentence) + 50:
+                df.loc[len(df)] = [src_sentence, pred[len(src_sentence):]]
+            else:
+                df.loc[len(df)] = [src_sentence, pred]
+
+        
+        
            
 
     # Save to JSONLINE
     filename = f"{output_prefix}({model.__class__.__name__}).jsonl"
-    jsonline(filename)
+    jsonline(df, filename)
 
     return df
 
