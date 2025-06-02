@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Dict
 from matplotlib import pyplot as plt
 import pandas as pd
@@ -119,6 +120,7 @@ def evaluate_and_save(
     device: str = "cuda",
     batch_size: int = 32,
     include_prompt:bool=True,
+    format:str="csv",
     config:Dict[str,int|str]|None=None
 ):
     """
@@ -168,11 +170,18 @@ def evaluate_and_save(
 
             gen_translation = tokenizer.batch_decode(preds, skip_special_tokens=True)
             input_sentence  = tokenizer.batch_decode(input_ids, skip_special_tokens=True)
-            print(gen_translation)
+          
             
 
-        # Decode & append
+        # Make Dataframe for serialization
         for src_sentence, pred in zip(input_sentence, gen_translation):
+            print("===:[Input Senctence]:===")
+            print(src_sentence)
+            print("=========================")
+            print("===:[Generated Senctence]:===")
+            print(pred)
+            print("=============================")
+
             if include_prompt:
                 df.loc[len(df)] = [src_sentence, pred]
                 
@@ -183,16 +192,20 @@ def evaluate_and_save(
         
         
            
-
-    # Save to JSONLINE
-    filename = f"{output_prefix}({model.__class__.__name__}).jsonl"
-    jsonline(df, filename)
+    if format == "csv":
+        filename = f"{output_prefix}({model.__class__.__name__}).jsonl"
+        csvline(df, filename)
+    elif format == "jsonl":
+        # Save to JSONLINE
+        jsonline(df, filename)
+    else:
+        raise ValueError("No valid save format")
 
     return df
 
 
 
-def jsonline(df, nome_file_output):
+def jsonline(df, out_file:str|Path):
     """
     Salva un DataFrame Pandas in un file JSON Lines (JSONL).
 
@@ -201,10 +214,13 @@ def jsonline(df, nome_file_output):
         nome_file_output (str): Il nome del file in cui salvare il DataFrame (es. 'dati.jsonl').
     """
     try:
-        with open(nome_file_output, 'w', encoding='utf-8') as f:
+        with open(out_file, 'w', encoding='utf-8') as f:
             for record in df.to_dict(orient='records'):
                 json_record = json.dumps(record, ensure_ascii=False)
                 f.write(json_record + '\n')
-        print(f"DataFrame salvato con successo in '{nome_file_output}'")
+        print(f"DataFrame salvato con successo in '{out_file}'")
     except Exception as e:
         print(f"Si è verificato un errore durante il salvataggio del DataFrame: {e}")
+
+def csvline(df:pd.DataFrame, out_file:str|Path):
+    df.to_csv(path_or_buf=out_file, sep=",", index=False, quoting=1, encoding='utf-8')
