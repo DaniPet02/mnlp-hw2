@@ -80,7 +80,6 @@ class Report(TrainerCallback):
              for key in eval_metrics:
                  eval_metrics[key] = eval_metrics[key][:len(epochs)]
 
-
         # Plot loss
         if train_losses or eval_losses:
             plt.figure(figsize=(10, 6))
@@ -111,9 +110,9 @@ class Report(TrainerCallback):
                 # plt.show()
                 plt.close()
 
+
 def evaluate_and_save(
     model,
-   
     tokenizer,
     tokenized_dataset,
     output_prefix: str,
@@ -148,7 +147,6 @@ def evaluate_and_save(
 
     # Results container
     df = pd.DataFrame(columns=["Original", "Translation(Generated)"])
-
    
     for idx, batch in tqdm(enumerate(loader, 1), dynamic_ncols=True, leave=True, total=len(loader)):
         #print(batch["input_ids"])
@@ -207,11 +205,11 @@ def evaluate_and_save(
 
 def jsonline(df, out_file:str|Path):
     """
-    Salva un DataFrame Pandas in un file JSON Lines (JSONL).
+    Saves a DataFrame Pandas in a file JSON Lines (JSONL).
 
     Args:
-        df (pd.DataFrame): Il DataFrame da salvare.
-        nome_file_output (str): Il nome del file in cui salvare il DataFrame (es. 'dati.jsonl').
+        df (pd.DataFrame): DataFrame to save.
+        nome_file_output (str): Name of the file to save the DataFrame in (es. 'dati.jsonl').
     """
     try:
         with open(out_file, 'w', encoding='utf-8') as f:

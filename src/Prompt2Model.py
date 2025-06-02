@@ -3,42 +3,42 @@ import torch
 class Prompt2Model:
     def __init__(self, model, prompter, device="cpu"):
         """
-        Inizializza PromptModel.
+        Initializes PromptModel.
 
         Args:
-            model: Il modello Hugging Face pre-addestrato (es. da AutoModelForCausalLM).
-            prompter: Un oggetto o una funzione responsabile della formattazione del prompt
-                      e della tokenizzazione. Deve avere un metodo `get_tokenizer()`
-                      che restituisce l'istanza del tokenizer Hugging Face, e deve
-                      essere un callable che, quando usato con `dataset.map(prompter, batched=True)`,
-                      restituisce un dizionario con almeno "input_ids" e "attention_mask".
-            device (str): Il device su cui eseguire il modello ("cpu" o "cuda").
-            default_generation_batch_size (int): Dimensione batch predefinita per la generazione.
+            model: Hugging Face pre-trained model (es. from AutoModelForCausalLM).
+            prompter: An object or a function responsible for prompt formatting
+                      and tokenization. Must have a method `get_tokenizer()`
+                      returning an instance of the Hugging Face tokenizer, and must
+                      be callable so that, when used with `dataset.map(prompter, batched=True)`,
+                      returns a dictionary with at least "input_ids" and "attention_mask".
+            device (str): Device on which execute the model ("cpu" or "cuda").
+            default_generation_batch_size (int): Predefined Batch Dimension for generation.
         """
         self.model = model.to(device)
         self.device = device
         self.prompter = prompter
-        self.model.eval() # Imposta il modello in modalità valutazione di default
+        self.model.eval() # Sets the model in evaluation mode by default
 
     def _generate_text_batched(self, examples_batch):
         """
-        Metodo interno per generare testo per un batch di esempi.
-        Chiamato da dataset.map(..., batched=True).
+        Internal method to generate text for a batch of examples.
+        Called by dataset.map(..., batched=True).
         """
         tokenizer = self.prompter.get_tokenizer()
 
         if tokenizer.pad_token_id is None:
-            # print("Avviso: tokenizer.pad_token_id non è impostato. Si utilizza eos_token_id per il padding degli input.")
+            # print("Warning: tokenizer.pad_token_id is not set. eos_token_id is used for padding of inputs.")
             tokenizer.pad_token_id = tokenizer.eos_token_id
 
-        # examples_batch['input_ids'] è una lista di liste di ID token dalla mappatura precedente.
-        # examples_batch['attention_mask'] è una lista di liste di maschere di attenzione.
+        # examples_batch['input_ids'] list of lists of ID token from previous mapping.
+        # examples_batch['attention_mask'] lista of lists of attention masks.
         
-        if not examples_batch["input_ids"]: # Gestisce il caso di un batch vuoto
+        if not examples_batch["input_ids"]: # Handles the case of an empty batch
             return {"generated_text": []}
 
-        # Effettua il padding delle sequenze all'interno del batch corrente
-        # alla lunghezza massima presente in questo specifico batch.
+        # Does padding of the input sequences internal to the current batch
+        # to the max length present in that specific batch
         max_len_in_batch = max(len(ids) for ids in examples_batch["input_ids"])
 
         padded_input_ids_list = []
@@ -48,7 +48,7 @@ class Prompt2Model:
             padding_length = max_len_in_batch - len(ids)
             
             current_padded_ids = ids + [tokenizer.pad_token_id] * padding_length
-            current_padded_mask = mask + [0] * padding_length # Padding della maschera di attenzione con 0
+            current_padded_mask = mask + [0] * padding_length # Padding of attention mask with 0
             
             padded_input_ids_list.append(current_padded_ids)
             padded_attention_mask_list.append(current_padded_mask)
@@ -59,10 +59,10 @@ class Prompt2Model:
         input_ids_tensor = torch.tensor(padded_input_ids_list, device=self.device, dtype=torch.long)
         attention_mask_tensor = torch.tensor(padded_attention_mask_list, device=self.device, dtype=torch.long)
 
-        # Esegue la generazione
-        # Nota: pad_token_id in model.generate è usato per il padding *durante* la generazione,
-        # se le sequenze generate terminano in momenti diversi o se num_return_sequences > 1.
-        # È spesso impostato su tokenizer.eos_token_id per i modelli causali.
+        # Executes generation
+        # Note: pad_token_id in model.generate is used for padding *during* generation,
+        # if generated sequences end at different times or if num_return_sequences > 1.
+        # It is often set to tokenizer.eos_token_id for causal models.
         generated_ids_batch_tensor = self.model.generate(
             input_ids=input_ids_tensor,
             attention_mask=attention_mask_tensor,
@@ -76,43 +76,45 @@ class Prompt2Model:
             pad_token_id=tokenizer.eos_token_id
         )
 
-        # Decodifica le sequenze generate.
-        # generated_ids_batch_tensor di solito include gli input_ids originali per i modelli CausalLM.
-        # tokenizer.batch_decode gestisce la decodifica.
+        # Decodes the generated sequences.
+        # generated_ids_batch_tensor is usually a tensor of input_ids for CausalLM models.
+        # tokenizer.batch_decode handles the decoding.
         decoded_outputs = tokenizer.batch_decode(
             generated_ids_batch_tensor, skip_special_tokens=True
         )
 
         return {"generated_text": decoded_outputs}
+    
     def _prepare_chat_inputs_batched(self, examples_batch, conversations_column_name):
         """
-        Metodo interno per preparare gli input per un batch di conversazioni
-        utilizzando tokenizer.apply_chat_template.
-        Chiamato da dataset.map(..., batched=True).
+        Internal method to prepare inputs for a batch of conversations
+        using tokenizer.apply_chat_template.
+        Called by dataset.map(..., batched=True).
         """
-        # examples_batch è un dizionario di liste.
-        # examples_batch[conversations_column_name] è una lista di intere cronologie di conversazioni.
-        # Esempio:
+        
+        # examples_batch is a dictionary of lists
+        # examples_batch[conversations_column_name] is a list of conversations history
+        # Example:
         # [
-        #   [{"role": "system", "content": "..."}, {"role": "user", "content": "..."}], # conversazione 1
-        #   [{"role": "user", "content": "Altra domanda..."}]                             # conversazione 2
+        #   [{"role": "system", "content": "..."}, {"role": "user", "content": "..."}], # conversation 1
+        #   [{"role": "user", "content": "Altra domanda..."}]                             # conversation 2
         # ]
         list_of_conversations = examples_batch[conversations_column_name]
 
         if not list_of_conversations:
             return {"input_ids": [], "attention_mask": []}
 
-        # apply_chat_template può processare un batch di conversazioni.
-        # Tokenizza, formatta, aggiunge prompt di generazione, effettua padding e troncatura.
+        # apply_chat_template can process a batch of conversations.
+        # Tokenizes, formats, adds prompt of generation, does padding and truncation.
         batch_tokenized_inputs = self.tokenizer.apply_chat_template(
             list_of_conversations,
             add_generation_prompt=True,
             tokenize=True,
-            padding="longest",  # Effettua padding alla sequenza più lunga nel batch corrente
-            truncation=True,    # Tronca le sequenze se superano la lunghezza massima del modello
-            max_length=self.tokenizer.model_max_length if self.tokenizer.model_max_length is not None else 512, # Max len del modello o un default
-            return_tensors=None, # Restituisce liste di liste (per compatibilità con .map)
-            return_dict=True      # Restituisce un dizionario con 'input_ids' e 'attention_mask'
+            padding="longest",  # Does padding to the longest sequence in the current batch
+            truncation=True,    # Truncates sequences if they exceed the max length of the model
+            max_length=self.tokenizer.model_max_length if self.tokenizer.model_max_length is not None else 512, # Max len of the model or default
+            return_tensors=None, # Returns lists of lists (for compatibility with .map)
+            return_dict=True      # Returns a dictionary with 'input_ids' and 'attention_mask'
         )
         
         return {
@@ -122,40 +124,36 @@ class Prompt2Model:
     
     def causal_prompt(self, hf_dataset, generation_batch_size = 8):
         """
-        Elabora un dataset per generare testo utilizzando il modello.
+        Processes a dataset to generate text using the model.
 
         Args:
-            hf_dataset (datasets.Dataset): Un oggetto Dataset di Hugging Face.
-                                           Si presume che questo dataset contenga il testo
-                                           da elaborare (o i campi necessari per il prompter).
-            generation_batch_size (Optional[int]): Dimensione del batch per la fase di generazione.
-                                                   Se fornito, sovrascrive quello predefinito dell'istanza.
+            hf_dataset (datasets.Dataset): An object Dataset of Hugging Face.
+            We presume that this dataset contains the text to be processed (or the necessary fields for the prompter).
+            generation_batch_size (Optional[int]): Dimension of the batch for the generation phase.
+            If given, overwrites the predefined of the instance.
 
         Returns:
-            datasets.Dataset: Un Dataset di Hugging Face con una colonna aggiunta "generated_text".
+            datasets.Dataset: A Hugging Face Dataset with an added column "generated_text".
         """
-    
 
-        # Assicurati che il modello sia in modalità valutazione
+        # Ensure the model is in evaluation mode
         self.model.eval()
 
         with torch.no_grad():
-            # Fase 1: Applica il prompter (formattazione del prompt e tokenizzazione).
-            # self.prompter è una funzione/callable che prende un batch di esempi
-            # e restituisce 'input_ids' e 'attention_mask' tokenizzati.
-            # print("Fase 1: Applicazione del prompter (tokenizzazione/formattazione)...")
+            # Phase 1: Apply the prompter (prompt formatting and tokenization).
+            # self.prompter is a function/callable that takes a batch of examples
+            # and returns 'input_ids' and 'attention_mask' tokenized.
+            # print("Fase 1: Application of the prompter (tokenization/formatting)...")
             
-            # Nota: La batch_size per questa prima mappa può anche essere specificata se necessario.
-            # dipende da quanto è intensivo dal punto di vista computazionale self.prompter.
+            # Note: the batch_size for this first mapping can also be specified if necessary:
+            # depends on how computationally intensive is self.prompter.
             processed_hf_dataset = hf_dataset.map(
-                self.prompter, # Questa dovrebbe essere la funzione di tokenizzazione/formattazione del prompt
+                self.prompter, # Tokenization/formatting function of the prompt
                 batched=True 
             )
-            
-        
 
-            # Fase 2: Genera testo usando il modello in batch.
-            # print(f"Fase 2: Generazione del testo con dimensione batch {generation_batch_size}...")
+            # Phase 2: Generate text using the model in batches.
+            # print(f"Fase 2: Generation of the text with batch dimension {generation_batch_size}...")
             generations_dataset = processed_hf_dataset.map(
                 self._generate_text_batched,
                 batched=True,
@@ -163,5 +161,3 @@ class Prompt2Model:
             )
 
         return generations_dataset
-        
-        

@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import *
 from pandas import Series
-
 from transformers import AutoTokenizer, AutoModelForCausalLM
+
 class Judge(ABC):
     def __init__(self, model:AutoModelForCausalLM, tokenizer:AutoTokenizer, conf:Dict[str, Any]) -> None:
         super()
@@ -23,4 +23,3 @@ class Judge(ABC):
     @abstractmethod
     def prompt(self, inputs:Dict[str, Any]) -> List[Dict[str,str]]:
         pass 
-
