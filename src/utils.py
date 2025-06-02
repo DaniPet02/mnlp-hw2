@@ -111,7 +111,7 @@ class Report(TrainerCallback):
                 plt.close()
 
 
-def evaluate_and_save(
+def generate_and_save(
     model,
     tokenizer,
     tokenized_dataset,
