@@ -11,7 +11,7 @@ class PrometheusJudge(Judge):
             load_in_4bit=True,
             bnb_4bit_use_double_quant=True,
             bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=torch.bfloat16,  # o torch.float16 se bfloat16 non è supportato
+            bnb_4bit_compute_dtype=torch.bfloat16,  # or torch.float16 if bfloat16 not supported
         )
         model = AutoModelForCausalLM.from_pretrained("prometheus-eval/prometheus-7b-v2.0", quantization_config=bnb_config)
         tokenizer = AutoTokenizer.from_pretrained("prometheus-eval/prometheus-7b-v2.0")
@@ -24,10 +24,10 @@ class PrometheusJudge(Judge):
     def prompt(self, inputs) -> List[Dict[str,str]]:
         ABS_SYSTEM_PROMPT = "You are a fair judge assistant tasked with providing clear, objective feedback based on specific criteria, ensuring each assessment reflects the absolute standards set for performance."
         
-        #TODO: Customize the prompt for Italian Tranlation - substitute {instructions-rubric-reference_answers} with correct instructions
+        # Customize the prompt for Italian Tranlation - substitute {instructions-rubric-reference_answers} with correct instructions
         ABSOLUTE_PROMPT ="""###Task Description:
-        An instruction (might include an Input inside it), a response to evaluate, a reference answer that gets a score of 5, and a score rubric representing a evaluation criteria are given.
-        1. Write a detailed feedback that assess the quality of the response strictly based on the given score rubric, not evaluating in general.
+        An instruction (might include an Input inside it), a response to evaluate, a reference answer that gets a score from 1 to 5, and a score rubric representing an evaluation criteria are given.
+        1. Write a detailed feedback that assesses the quality of the response strictly based on the given score rubric, not evaluating in general.
         2. After writing a feedback, write a score that is an integer between 1 and 5. You should refer to the score rubric.
         3. The output format should look as follows: "Feedback: (write a feedback for criteria) [RESULT] (an integer number between 1 and 5)"
         4. Please do not generate any other opening, closing, and explanations.
@@ -45,7 +45,6 @@ class PrometheusJudge(Judge):
         {rubric}
 
         ###Feedback: """
-
       
         messages = [
             {"role": "user", "content": ABS_SYSTEM_PROMPT + "\n\n" + ABSOLUTE_PROMPT.format(instruction=prompt, response=response)} # Fill the prompt with your data
@@ -61,4 +60,3 @@ class PrometheusJudge(Judge):
         decoded = self.get_tokeinizer().batch_decode(j)
 
         return decoded
- 

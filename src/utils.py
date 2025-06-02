@@ -79,7 +79,6 @@ class Report(TrainerCallback):
              for key in eval_metrics:
                  eval_metrics[key] = eval_metrics[key][:len(epochs)]
 
-
         # Plot loss
         if train_losses or eval_losses:
             plt.figure(figsize=(10, 6))
@@ -110,9 +109,9 @@ class Report(TrainerCallback):
                 # plt.show()
                 plt.close()
 
+
 def evaluate_and_save(
     model,
-   
     tokenizer,
     tokenized_dataset,
     output_prefix: str,
@@ -146,7 +145,6 @@ def evaluate_and_save(
 
     # Results container
     df = pd.DataFrame(columns=["Original", "Translation(Generated)"])
-
    
     for idx, batch in tqdm(enumerate(loader, 1), dynamic_ncols=True, leave=True, total=len(loader)):
         #print(batch["input_ids"])
@@ -169,7 +167,6 @@ def evaluate_and_save(
             gen_translation = tokenizer.batch_decode(preds, skip_special_tokens=True)
             input_sentence  = tokenizer.batch_decode(input_ids, skip_special_tokens=True)
             print(gen_translation)
-            
 
         # Decode & append
         for src_sentence, pred in zip(input_sentence, gen_translation):
@@ -177,12 +174,7 @@ def evaluate_and_save(
                 df.loc[len(df)] = [src_sentence, pred]
                 
             else:
-                df.loc[len(df)] = [src_sentence, pred[len(src_sentence):]]
-                
-
-        
-        
-           
+                df.loc[len(df)] = [src_sentence, pred[len(src_sentence):]] 
 
     # Save to JSONLINE
     filename = f"{output_prefix}({model.__class__.__name__}).jsonl"
@@ -191,20 +183,19 @@ def evaluate_and_save(
     return df
 
 
-
 def jsonline(df, nome_file_output):
     """
-    Salva un DataFrame Pandas in un file JSON Lines (JSONL).
+    Saves a DataFrame Pandas in a file JSON Lines (JSONL).
 
     Args:
-        df (pd.DataFrame): Il DataFrame da salvare.
-        nome_file_output (str): Il nome del file in cui salvare il DataFrame (es. 'dati.jsonl').
+        df (pd.DataFrame): DataFrame to save.
+        nome_file_output (str): Name of the file to save the DataFrame in (es. 'dati.jsonl').
     """
     try:
         with open(nome_file_output, 'w', encoding='utf-8') as f:
             for record in df.to_dict(orient='records'):
                 json_record = json.dumps(record, ensure_ascii=False)
                 f.write(json_record + '\n')
-        print(f"DataFrame salvato con successo in '{nome_file_output}'")
+        print(f"DataFrame saved successfully in '{nome_file_output}'")
     except Exception as e:
-        print(f"Si è verificato un errore durante il salvataggio del DataFrame: {e}")
+        print(f"An error occured while saving the DataFrame: {e}")

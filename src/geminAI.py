@@ -3,7 +3,6 @@ import json
 import os
 from pathlib import Path
 from time import time
-
 import pandas as pd
 from google import genai
 from google.genai import types
@@ -41,12 +40,11 @@ class GeminiJudge:
         except (json.JSONDecodeError, ValueError) as e:
             error_log_path = self.log.joinpath(f"panic_gen{time.time():.f2}.txt")
             with open(error_log_path, "w", encoding="utf-8") as f:
-                f.write("--- Errore di Parsing JSON ---\n")
-                f.write(f"Tipo di errore: {type(e).__name__}\n")
+                f.write("--- Parsing JSON Error ---\n")
+                f.write(f"Error type: {type(e).__name__}\n")
                 f.write("\n-----------------------------------------------------\n")
-      
 
-    def jjudge(self, query: str):
+    def judge(self, query: str):
         response = self.client.models.generate_content(
             model=self.model, config=self.config, contents=query
         )
@@ -56,8 +54,8 @@ class GeminiJudge:
         except (json.JSONDecodeError, ValueError) as e:
             error_log_path = self.log.joinpath(f"panic_gen{time.time():.f2}.txt")
             with open(error_log_path, "w", encoding="utf-8") as f:
-                f.write("--- Errore di Parsing JSON ---\n")
-                f.write(f"Tipo di errore: {type(e).__name__}\n")
+                f.write("--- Parsing JSON Error ---\n")
+                f.write(f"Error type: {type(e).__name__}\n")
                 f.write("\n-----------------------------------------------------\n")
 
         return response.text

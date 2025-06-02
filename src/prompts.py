@@ -15,7 +15,6 @@ class LLMPrompt(GenericPrompter):
     
     def __call__(self, examples) -> Dict:
         chat = [
-    
             [
                 {"role": "system",   "content": "Sei un traduttore esperto di Italiano Antico "},
                 {"role": "user",     "content": "Traduci 'La corte era in gran fermento.' in Italiano Moderno"},
@@ -26,5 +25,3 @@ class LLMPrompt(GenericPrompter):
 
         model_inputs = self._tokenize(chat)
         return model_inputs
-
-        
