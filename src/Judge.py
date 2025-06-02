@@ -11,7 +11,7 @@ class Judge(ABC):
         self.conf = conf
 
     @abstractmethod
-    def judge(self, batch_prompts:List[str]) -> Series[str]:
+    def judge(self, batch_prompts:List[str]) -> Series:
         pass 
 
     def get_judge(self):

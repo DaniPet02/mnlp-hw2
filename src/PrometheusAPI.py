@@ -1,11 +1,19 @@
+import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import BitsAndBytesConfig
 from Judge import Judge
 
 from typing import *
-class PRometheusJudge(Judge):
+class PrometheusJudge(Judge):
     def __init__(self, device:str="cpu"):
         
-        model = AutoModelForCausalLM.from_pretrained("prometheus-eval/prometheus-7b-v2.0")
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.bfloat16,  # o torch.float16 se bfloat16 non è supportato
+        )
+        model = AutoModelForCausalLM.from_pretrained("prometheus-eval/prometheus-7b-v2.0", quantization_config=bnb_config)
         tokenizer = AutoTokenizer.from_pretrained("prometheus-eval/prometheus-7b-v2.0")
         conf = {
             "max_new_tokens": 1000,

@@ -118,6 +118,7 @@ def evaluate_and_save(
     output_prefix: str,
     device: str = "cuda",
     batch_size: int = 32,
+    include_prompt:bool=True,
     config:Dict[str,int|str]|None=None
 ):
     """
@@ -172,10 +173,12 @@ def evaluate_and_save(
 
         # Decode & append
         for src_sentence, pred in zip(input_sentence, gen_translation):
-            if len(pred) > len(src_sentence) + 50:
-                df.loc[len(df)] = [src_sentence, pred[len(src_sentence):]]
-            else:
+            if include_prompt:
                 df.loc[len(df)] = [src_sentence, pred]
+                
+            else:
+                df.loc[len(df)] = [src_sentence, pred[len(src_sentence):]]
+                
 
         
         

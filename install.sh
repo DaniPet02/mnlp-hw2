@@ -80,8 +80,7 @@ pip3 install absl-py
 
 pip3 install -q google-genai
 pip3 install vllm
-# Prometheus API
-pip3 install prometheus-eval
+
 # other usefull utils
 
 pip3 install ipywidgets
