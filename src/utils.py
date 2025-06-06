@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Union
 from matplotlib import pyplot as plt
 import pandas as pd
 import json
@@ -110,95 +110,82 @@ class Report(TrainerCallback):
                 # plt.show()
                 plt.close()
 
-
+from datasets import Dataset
 def generate_and_save(
     model,
     tokenizer,
-    tokenized_dataset,
+    tokenized_dataset: Dataset,
     output_prefix: str,
-    device: str = "cuda",
+    device: str = "cuda" if torch.cuda.is_available() else "cpu",
     batch_size: int = 32,
-    include_prompt:bool=True,
-    format:str="csv",
-    config:Dict[str,int|str]|None=None
+    include_prompt: bool = True,
+    format: str = "csv",
+    config: Union[Dict[str, Union[int, str]], None] = None,
 ):
     """
-    Generate translations for each example in `tokenized_dataset`, compare against
-    `original_dataset`, and save a TSV with columns ["Original", "Translation(Generated)", "Evaluation"].
+    Generate translations for each example in `tokenized_dataset` and save a CSV/JSONL
+    with columns ["Original", "Translation(Generated)"].
 
     Args:
-        model           : a HuggingFace seq2seq model
-        tokenizer       : corresponding tokenizer
-        tokenized_dataset : a Dataset with fields "input_ids" & "attention_mask"
-        original_dataset  : the original (un-tokenized) dataset with field "Sentence"
-        output_prefix   : prefix for the output file; final name will be
-                          f"{output_prefix}({model.__class__.__name__}).tsv"
-        device          : device to run on, e.g. "cuda" or "cpu"
-        batch_size      : generation batch size
-        generate_params : additional kwargs for `model.generate()`
-    Returns:
-        pandas.DataFrame with columns ["Original", "Translation(Generated)", "Evaluation"]
-    """
-    # Prep
-    model = model.eval() 
-    
-    tokenized_dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])
-    loader = torch.utils.data.DataLoader(tokenized_dataset, batch_size=batch_size)
+        model              : HuggingFace seq2seq model
+        tokenizer          : corresponding tokenizer
+        tokenized_dataset  : HuggingFace Dataset with fields "input_ids" & "attention_mask"
+        output_prefix      : output file prefix
+        device             : device to run on, e.g. "cuda" or "cpu"
+        batch_size         : generation batch size
+        include_prompt     : if True, keep the full generated text; if False, strip the prompt from output
+        format             : "csv" or "jsonl"
+        config             : additional kwargs for model.generate()
 
-    # Results container
-    df = pd.DataFrame(columns=["Original", "Translation(Generated)"])
-   
-    for idx, batch in tqdm(enumerate(loader, 1), dynamic_ncols=True, leave=True, total=len(loader)):
-        #print(batch["input_ids"])
+    Returns:
+        pandas.DataFrame with columns ["Original", "Translation(Generated)"]
+    """
+    # Move model to device and set evaluation model
+    model.eval()
+
+    # Ensure dataset is in PyTorch format
+    tokenized_dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])
+
+    loader = torch.utils.data.DataLoader(
+        tokenized_dataset,
+        batch_size=batch_size,
+        shuffle=False
+    )
+
+    rows = []
+
+    for batch in tqdm(loader, desc="Generating", dynamic_ncols=True):
         input_ids = batch["input_ids"].to(device)
         attention_mask = batch["attention_mask"].to(device)
 
         with torch.no_grad():
-            if config:
-                preds = model.generate(
-                    input_ids=input_ids,
-                    attention_mask=attention_mask,
-                    **config
-                )
-            else:
-                preds = model.generate(
-                    input_ids=input_ids,
-                    attention_mask=attention_mask,
-                )
+            preds = model.generate(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                **(config or {})
+            )
 
-            gen_translation = tokenizer.batch_decode(preds, skip_special_tokens=True)
-            input_sentence  = tokenizer.batch_decode(input_ids, skip_special_tokens=True)
-          
-            
+        decoded_inputs = tokenizer.batch_decode(input_ids, skip_special_tokens=True)
+        decoded_outputs = tokenizer.batch_decode(preds, skip_special_tokens=True)
 
-        # Make Dataframe for serialization
-        for src_sentence, pred in zip(input_sentence, gen_translation):
-            print("===:[Input Senctence]:===")
-            print(src_sentence)
-            print("=========================")
-            print("===:[Generated Senctence]:===")
-            print(pred)
-            print("=============================")
-
+        for src, pred in zip(decoded_inputs, decoded_outputs):
             if include_prompt:
-                df.loc[len(df)] = [src_sentence, pred]
-                
+                rows.append([src, pred])
             else:
-                df.loc[len(df)] = [src_sentence, pred[len(src_sentence):]]
-                
+                trimmed_pred = pred[len(src):].strip()
+                rows.append([src, trimmed_pred])
 
-        
-        
-           
+    df = pd.DataFrame(rows, columns=["Original", "Translation(Generated)"])
+
+    filename = f"{output_prefix}({model.__class__.__name__}).{format}"
     if format == "csv":
-        filename = f"{output_prefix}({model.__class__.__name__}).jsonl"
-        csvline(df, filename)
+        df.to_csv(filename, index=False)
     elif format == "jsonl":
-        # Save to JSONLINE
-        jsonline(df, filename)
+        df.to_json(filename, orient="records", lines=True, force_ascii=False)
     else:
-        raise ValueError("No valid save format")
+        raise ValueError("Invalid format: use 'csv' or 'jsonl'")
 
+    print(f"Saved to {filename}")
     return df
 
 
@@ -222,3 +209,8 @@ def jsonline(df, out_file:str|Path):
 
 def csvline(df:pd.DataFrame, out_file:str|Path):
     df.to_csv(path_or_buf=out_file, sep=",", index=False, quoting=1, encoding='utf-8')
+
+def txtline(lines, filename):
+    with open(filename, "w", encoding="utf-8") as f:
+        for line in lines:
+            f.write(line + "\n")

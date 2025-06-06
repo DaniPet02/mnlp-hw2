@@ -17,8 +17,8 @@ class Judge(ABC):
     def get_judge(self):
         return self._model
     
-    def get_tokeinizer(self):
-        return self.tokenizer
+    def get_tokenizer(self):
+        return self._tokenizer
 
     @abstractmethod
     def prompt(self, inputs:Dict[str, Any]) -> List[Dict[str,str]]:
