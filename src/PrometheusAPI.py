@@ -39,16 +39,34 @@ class PrometheusJudge(Judge):
         {response}
 
         ###Reference Answer (Score 5):
-        {reference_answer}
+        Italiano Antico: 'Orlando, che gran tempo inamorato fu de la bella Angelica.'
+        Italiano Moderno (Score 1): 'Orlando, che gran tempo è, inamorato fu de la bella Angelica.'
+        Italiano Moderno (Score 2): 'Orlando, inamorato fu gran tempo de la bella Angelica.'
+        Italiano Moderno (Score 3): 'Orlando da gran tempo è inamorato della bella Angelica.'
+        Italiano Moderno (Score 4): 'Orlando è da grande tempo innamorato della bella Angelica.'
+        Italiano Moderno (Score 5): 'Orlando è innamorato della bella Angelica da molto tempo.'
 
         ###Score Rubrics:
-        {rubric}
+        1: Completely Unacceptable, description: Translation bears no resemblance to the original meaning. 
+        Output is gibberish, nonsensical, or entirely irrelevant.
+        2: Severe Errors, description: Translation contains critical semantic and/or syntactic errors, 
+        significant omissions, or unwarranted additions that distort the core message. 
+        The output is unnatural and clearly not human-like.
+        3: Partially Incorrect / Lackluster, description: Translation conveys a portion of the original meaning but is marred by 
+        noticeable errors (e.g., typos, minor semantic inaccuracies, awkward phrasing). 
+        While understandable, it lacks polish and accuracy.
+        4: Good Translation, description: Translation is largely accurate and faithful to the original meaning. 
+        It is fluent, comprehensible, and semantically sound. 
+        Minor stylistic deviations from the original may be present, but overall quality is high.
+        5: Perfect / Near-Native Translation, description: Translation is accurate, fluent, complete, and coherent, 
+        perfectly capturing the meaning, nuance, and style of the original text. 
+        It reads as if originally written in the target language.
 
         ###Feedback: """
       
         messages = [
             {"role": "user", "content": ABS_SYSTEM_PROMPT + "\n\n" + ABSOLUTE_PROMPT.format(instruction=prompt, response=response)} # Fill the prompt with your data
-            for prompt, response in zip(inputs["prompt"],inputs["response"]) ]
+            for prompt, response in zip(inputs["prompt"],inputs["response"])]
         
         return messages
     
