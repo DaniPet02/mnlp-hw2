@@ -5,12 +5,13 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import json
 # Import Datases to work with Transformers by Hugging-Face
-
 # Imports for Transformers
 import os
 import torch
 from tqdm.auto import tqdm
+from datasets import Dataset
 from transformers import TrainerCallback
+
 
 class Report(TrainerCallback):
     """
@@ -110,7 +111,7 @@ class Report(TrainerCallback):
                 # plt.show()
                 plt.close()
 
-from datasets import Dataset
+
 def generate_and_save(
     model,
     tokenizer,
@@ -154,10 +155,11 @@ def generate_and_save(
 
     rows = []
 
+    # Iterate over the DataLoader to generate translations
     for batch in tqdm(loader, desc="Generating", dynamic_ncols=True):
         input_ids = batch["input_ids"].to(device)
         attention_mask = batch["attention_mask"].to(device)
-
+        
         with torch.no_grad():
             preds = model.generate(
                 input_ids=input_ids,
@@ -165,18 +167,22 @@ def generate_and_save(
                 **(config or {})
             )
 
+        # Decode the generated predictions and input_ids
         decoded_inputs = tokenizer.batch_decode(input_ids, skip_special_tokens=True)
         decoded_outputs = tokenizer.batch_decode(preds, skip_special_tokens=True)
-
+        
+        # Collect rows for DataFrame
         for src, pred in zip(decoded_inputs, decoded_outputs):
-            if include_prompt:
+            if include_prompt:  # If include_prompt is True, keep the full generated text
                 rows.append([src, pred])
-            else:
+            else:  # If include_prompt is False, strip the prompt from output
                 trimmed_pred = pred[len(src):].strip()
                 rows.append([src, trimmed_pred])
 
+    # Create DataFrame from the collected rows
     df = pd.DataFrame(rows, columns=["Original", "Translation(Generated)"])
 
+    # Save DataFrame to CSV or JSONL
     filename = f"{output_prefix}({model.__class__.__name__}).{format}"
     if format == "csv":
         df.to_csv(filename, index=False)
@@ -189,7 +195,6 @@ def generate_and_save(
     return df
 
 
-
 def jsonline(df, out_file:str|Path):
     """
     Saves a DataFrame Pandas in a file JSON Lines (JSONL).
@@ -198,17 +203,20 @@ def jsonline(df, out_file:str|Path):
         df (pd.DataFrame): DataFrame to save.
         nome_file_output (str): Name of the file to save the DataFrame in (es. 'dati.jsonl').
     """
+    # Save the DataFrame to a JSON Lines file
     try:
         with open(out_file, 'w', encoding='utf-8') as f:
             for record in df.to_dict(orient='records'):
                 json_record = json.dumps(record, ensure_ascii=False)
                 f.write(json_record + '\n')
-        print(f"DataFrame salvato con successo in '{out_file}'")
+        print(f"DataFrame successfully saved in '{out_file}'")
     except Exception as e:
-        print(f"Si è verificato un errore durante il salvataggio del DataFrame: {e}")
+        print(f"An error occurred while saving the DataFrame: {e}")
+
 
 def csvline(df:pd.DataFrame, out_file:str|Path):
     df.to_csv(path_or_buf=out_file, sep=",", index=False, quoting=1, encoding='utf-8')
+
 
 def txtline(lines, filename):
     with open(filename, "w", encoding="utf-8") as f:

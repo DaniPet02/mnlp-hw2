@@ -4,6 +4,8 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers import BitsAndBytesConfig
 from GenericPrometheus import GenericPrometheus
 
+
+# This code is a part of the Prometheus API, which is used to evaluate translations using the Prometheus model.
 class PrometheusJudge(GenericPrometheus):
     def __init__(self, device:str="cpu"):
         self.device = device
@@ -65,11 +67,13 @@ class PrometheusJudge(GenericPrometheus):
         ###Feedback: """
       
         messages = [
-            f"{ABS_SYSTEM_PROMPT} \n\n {ABSOLUTE_PROMPT.format(instruction=prompt, response=response)}" # Fill the prompt with your data
+            f"{ABS_SYSTEM_PROMPT} \n\n {ABSOLUTE_PROMPT.format(instruction=prompt, response=response)}" # Fill the prompt with data
             for prompt, response in zip(inputs["Prompt"],inputs["Translation(Generated)"])]
         
         return self.get_tokenizer()(messages, padding=True, max_length=680, truncation=True)
-
+    
+    
+# This code is a part of the M-Prometheus API, which is used to evaluate translations using the M-Prometheus model.
 class MPrometheusJudge(GenericPrometheus):
     def __init__(self, device:str="cpu"):
         self.device = device
@@ -122,7 +126,7 @@ class MPrometheusJudge(GenericPrometheus):
         """
       
         messages = [
-            f"{ABS_SYSTEM_PROMPT} \n\n {ABSOLUTE_PROMPT.format(instruction=prompt, response=response)}" # Fill the prompt with your data
+            f"{ABS_SYSTEM_PROMPT} \n\n {ABSOLUTE_PROMPT.format(instruction=prompt, response=response)}" # Fill the prompt with data
             for prompt, response in zip(inputs["Prompt"],inputs["Translation(Generated)"])]
         
         return self.get_tokeinizer()(messages, padding=True, max_length=680, truncation=True)
