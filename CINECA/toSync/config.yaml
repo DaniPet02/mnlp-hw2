@@ -1,5 +1,5 @@
 ### model
-model_name_or_path: path_of_model  # no hf_id but the absolute path, save it in a specific directory
+model_name_or_path: sapienzanlp/Minerva-7B-base-v1.0  # no hf_id but the absolute path, save it in a specific directory
 new_special_tokens: <|start_header_id|>,<|end_header_id|>,<|eot_id|>  # token added with the chat template
 
 ### method
@@ -23,7 +23,7 @@ overwrite_cache: true
 preprocessing_num_workers: 16
 
 ### output
-output_dir: /path/to/output  # output directory
+output_dir: /minerva_instruct  # output directory
 logging_steps: 10
 save_steps: 500
 plot_loss: true
@@ -47,4 +47,4 @@ eval_steps: 100
 
 ### logging
 report_to: wandb
-run_name: run_name  # the name of the run
+run_name: mnlp_hw2  # the name of the run

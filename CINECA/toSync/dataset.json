@@ -1,6 +1,6 @@
 {
     "conversations-it": {
-        "hf_hub_url": "sapienzanlp/conversations_italian",
+        "hf_hub_url": "GAIR/lima",
         "formatting": "sharegpt",
         "columns": {
             "messages": "messages"

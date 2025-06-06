@@ -1,6 +1,6 @@
 #!/bin/bash
 
 LOCAL="./toSync"
-REMOTE="/leonardo/home/userexternal/apizzi00"
-scp -r $LOCAL apizzi00@data.leonardo.cineca.it:$REMOTE
+REMOTE="/leonardo/home/userexternal/dpetrini"
+scp -r $LOCAL dpetrini@data.leonardo.cineca.it:$REMOTE
 

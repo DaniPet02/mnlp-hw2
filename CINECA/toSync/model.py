@@ -3,7 +3,7 @@ import torch.nn as nn
 import numpy as np
 import transformers
 
-model_id = "minerva-7b-it"
+model_id = "sapienzanlp/Minerva-7B-base-v1.0"
 
 pipeline = transformers.pipeline(
     model=model_id,
