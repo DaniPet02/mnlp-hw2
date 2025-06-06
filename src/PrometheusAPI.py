@@ -48,7 +48,7 @@ class PrometheusJudge(Judge):
       
         messages = [
             {"role": "user", "content": ABS_SYSTEM_PROMPT + "\n\n" + ABSOLUTE_PROMPT.format(instruction=prompt, response=response)} # Fill the prompt with your data
-            for prompt, response in zip(inputs["prompt"],inputs["response"]) ]
+            for prompt, response in zip(inputs["Prompt"],inputs["Translation(Generated)"])]
         
         return messages
     
