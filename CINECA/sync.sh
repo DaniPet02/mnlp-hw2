@@ -1,6 +1,6 @@
 #!/bin/bash
+USERNAME="apizzi00"
+LOCAL="./toSync/"
+REMOTE="/leonardo/home/userexternal/$USERNAME"
 
-LOCAL="./toSync"
-REMOTE="/leonardo/home/userexternal/dpetrini"
-scp -r $LOCAL dpetrini@data.leonardo.cineca.it:$REMOTE
-
+rsync -avz $LOCAL $USERNAME@data.leonardo.cineca.it:$REMOTE
