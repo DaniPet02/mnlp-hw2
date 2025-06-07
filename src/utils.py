@@ -144,7 +144,7 @@ def generate_and_save(
     model.eval()
 
     # Ensure dataset is in PyTorch format
-    tokenized_dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])
+    #tokenized_dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])
 
     loader = torch.utils.data.DataLoader(
         tokenized_dataset,
@@ -155,8 +155,11 @@ def generate_and_save(
     rows = []
 
     for batch in tqdm(loader, desc="Generating", dynamic_ncols=True):
-        input_ids = batch["input_ids"].to(device)
-        attention_mask = batch["attention_mask"].to(device)
+        
+        target = batch["Target"]
+        origin = batch["Sentence"]
+        input_ids = torch.as_tensor(batch["input_ids"], device=device, dtype=torch.long).unsqueeze(0)
+        attention_mask = torch.as_tensor(batch["attention_mask"], device=device, dtype=torch.long).unsqueeze(0)
 
         with torch.no_grad():
             preds = model.generate(
@@ -168,14 +171,14 @@ def generate_and_save(
         decoded_inputs = tokenizer.batch_decode(input_ids, skip_special_tokens=True)
         decoded_outputs = tokenizer.batch_decode(preds, skip_special_tokens=True)
 
-        for src, pred in zip(decoded_inputs, decoded_outputs):
+        for orr,targ, src,pred in zip(origin,target, decoded_inputs, decoded_outputs):
             if include_prompt:
-                rows.append([src, pred])
+                rows.append([src,orr,targ,pred,"", "", "", ""])
             else:
                 trimmed_pred = pred[len(src):].strip()
-                rows.append([src, trimmed_pred])
+                rows.append([src,orr,targ,trimmed_pred, "", "", "", ""])
 
-    df = pd.DataFrame(rows, columns=["Original", "Translation(Generated)"])
+    df = pd.DataFrame(rows, columns=["Prompt","Original","Target","Translation(Generated)","User_Score","Judge_Score(Prometheus)", "Judge_Score(Gemini)", "Judge_Score(GPT)"])
 
     filename = f"{output_prefix}({model.__class__.__name__}).{format}"
     if format == "csv":
@@ -204,6 +207,7 @@ def jsonline(df, out_file:str|Path):
                 json_record = json.dumps(record, ensure_ascii=False)
                 f.write(json_record + '\n')
         print(f"DataFrame salvato con successo in '{out_file}'")
+        return f
     except Exception as e:
         print(f"Si è verificato un errore durante il salvataggio del DataFrame: {e}")
 

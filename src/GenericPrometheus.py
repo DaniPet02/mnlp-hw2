@@ -1,3 +1,4 @@
+import re
 import torch
 from abc import abstractmethod
 from torch.utils.data import DataLoader
@@ -52,11 +53,11 @@ class GenericPrometheus(Judge):
         return all_outputs
     
     
-    def parse_responses(responses):
+    def parse_responses(self,responses):
         
         scores = []
         for r in responses:
-            match = re.search(r"\[RESULT\]\s*([1-5])", text)
+            match = re.search(r"\[RESULT\]\s*([1-5])", r)
             scores.append(int(match.group(1)) if match else None)
         return scores
     
