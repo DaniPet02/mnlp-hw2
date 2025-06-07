@@ -37,7 +37,7 @@ if [ ! -d "LLaMA-Factory" ]; then
 # configure LLMA-factory
 cp config.yaml LLaMA-Factory
 cat dataset_config.json > LLaMA-Factory/data/dataset_info.json
-
+fi
 # Enter in LLMA-factory folder
 cd LLaMA-Factory
 
