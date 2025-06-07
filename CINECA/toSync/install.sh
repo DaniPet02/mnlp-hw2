@@ -11,7 +11,7 @@ TOKEN_HF="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"
 if [ ! -d "$ENV_NAME" ]; then
     echo "===[create MNLP]==="
     python3 -m venv MNLP
-
+    
     # activating the new virtualenv
     source MNLP/bin/activate
 
@@ -25,19 +25,19 @@ if [ ! -d "$ENV_NAME" ]; then
     pip3 install -U "huggingface_hub[cli]"
     python3 -c "from huggingface_hub import login; login(token='$TOKEN_HF')"
 
-
-    # LLMA factory dependencies
-
     
+else
+    source MNLP/bin/activate
 fi
+    
 
 if [ ! -d "LLaMA-Factory" ]; then 
     git clone --depth 1 https://github.com/hiyouga/LLaMA-Factory.git
-
+fi
 # configure LLMA-factory
 cp config.yaml LLaMA-Factory
 cat dataset_config.json > LLaMA-Factory/data/dataset_info.json
-fi
+
 # Enter in LLMA-factory folder
 cd LLaMA-Factory
 
