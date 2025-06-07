@@ -24,13 +24,11 @@ if [ ! -d "$ENV_NAME" ]; then
     # hugging-face tools
     pip3 install -U "huggingface_hub[cli]"
     python3 -c "from huggingface_hub import login; login(token='$TOKEN_HF')"
-
-    
 else
     source MNLP/bin/activate
 fi
-    
 
+# download LLMA-factory
 if [ ! -d "LLaMA-Factory" ]; then 
     git clone --depth 1 https://github.com/hiyouga/LLaMA-Factory.git
 fi
@@ -41,6 +39,8 @@ cat dataset_config.json > LLaMA-Factory/data/dataset_info.json
 # Enter in LLMA-factory folder
 cd LLaMA-Factory
 
+# download dataset via hugging-face hub
+python3 -c "from datasets import load_dataset; load_dataset('GAIR/lima', cache_dir='LIMA')"
 
 
 

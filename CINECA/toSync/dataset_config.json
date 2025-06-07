@@ -1,6 +1,6 @@
 {
     "conversations-it": {
-        "hf_hub_url": "GAIR/lima",
+        "hf_hub_url": "./LIMA",
         "formatting": "sharegpt",
         "columns": {
             "messages": "messages"
