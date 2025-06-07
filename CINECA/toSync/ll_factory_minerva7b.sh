@@ -13,4 +13,4 @@
 #SBATCH --job-name=minerva_traning           # project value
 #SBATCH --gresp:gpu:2
 
-llamafactory-cli train ../toSync/config.yaml
+llamafactory-cli train config.yaml
