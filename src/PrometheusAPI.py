@@ -65,10 +65,10 @@ class PrometheusJudge(GenericPrometheus):
         It reads as if originally written in the target language.
 
         ###Feedback: """
-      
-        messages = [
-            f"{ABS_SYSTEM_PROMPT} \n\n {ABSOLUTE_PROMPT.format(instruction=prompt, response=response)}" # Fill the prompt with data
-            for prompt, response in zip(inputs["Prompt"],inputs["Translation(Generated)"])]
+
+        template = f"{ABS_SYSTEM_PROMPT} \n\n {ABSOLUTE_PROMPT}"
+        messages = [template.format(instruction=prompt, response=response) # Fill the prompt with data
+                    for prompt, response in zip(inputs["Prompt"], inputs["Translation(Generated)"])]
         
         return self.get_tokenizer()(messages, padding=True, max_length=680, truncation=True)
     
@@ -83,7 +83,7 @@ class MPrometheusJudge(GenericPrometheus):
             bnb_4bit_quant_type="nf4",
             bnb_4bit_compute_dtype=torch.bfloat16,  # or torch.float16 if bfloat16 not supported
         )
-        model = AutoModelForCausalLM.from_pretrained("Unbabel/M-Prometheus-7B",device_map=device, quantization_config=bnb_config)
+        model = AutoModelForCausalLM.from_pretrained("Unbabel/M-Prometheus-7B", device_map=device, quantization_config=bnb_config)
         tokenizer = AutoTokenizer.from_pretrained("Unbabel/M-Prometheus-7B")
         conf = {
             "max_new_tokens": 680,
@@ -125,8 +125,8 @@ class MPrometheusJudge(GenericPrometheus):
         ###Feedback:
         """
       
-        messages = [
-            f"{ABS_SYSTEM_PROMPT} \n\n {ABSOLUTE_PROMPT.format(instruction=prompt, response=response)}" # Fill the prompt with data
-            for prompt, response in zip(inputs["Prompt"],inputs["Translation(Generated)"])]
+        template = f"{ABS_SYSTEM_PROMPT} \n\n {ABSOLUTE_PROMPT}"
+        messages = [template.format(instruction=prompt, response=response) # Fill the prompt with data
+                    for prompt, response in zip(inputs["Prompt"], inputs["Translation(Generated)"])]
         
         return self.get_tokeinizer()(messages, padding=True, max_length=680, truncation=True)
