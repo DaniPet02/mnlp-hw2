@@ -1,16 +1,15 @@
 {
-    "conversations-it": {
-        "hf_hub_url": "./LIMA",
+    "LIMA": {
+        "hf_hub_url": "/leonardo/home/userexternal/apizzi00/LLaMA-Factory/LIMA",
         "formatting": "sharegpt",
         "columns": {
-            "messages": "messages"
+            "messages": "conversations"
         },
         "tags": {
-            "role_tag": "role",
-            "content_tag": "content",
-            "user_tag": "user",
-            "assistant_tag": "assistant",
-            "system_tag": "system"
+            "role_tag": "from",
+            "content_tag": "value",
+            "user_tag": "human",
+            "assistant_tag": "gpt"
         }
     }
 }

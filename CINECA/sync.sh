@@ -1,6 +1,7 @@
 #!/bin/bash
 USERNAME="apizzi00"
-LOCAL="./toSync/"
+LOCAL= realpath "./toSync/"
+LOCAL="$LOCAL/"
 REMOTE="/leonardo/home/userexternal/$USERNAME"
 
-rsync -avz $LOCAL $USERNAME@data.leonardo.cineca.it:$REMOTE
+rsync -avz --progress $LOCAL $USERNAME@data.leonardo.cineca.it:$REMOTE

@@ -1,6 +1,6 @@
 ### model
-model_name_or_path: sapienzanlp/Minerva-7B-base-v1.0  # no hf_id but the absolute path, save it in a specific directory
-new_special_tokens: <|start_header_id|>,<|end_header_id|>,<|eot_id|>  # token added with the chat template
+model_name_or_path: /leonardo/home/userexternal/apizzi00/LLaMA-Factory/minerva-7b  # no hf_id but the absolute path, save it in a specific directory
+###new_special_tokens: <|start_header_id|>,<|end_header_id|>,<|eot_id|>  # token added with the chat template
 
 ### method
 stage: sft  # Supervised Fine-Tuning
@@ -15,7 +15,7 @@ flash_attn: fa2
 deepspeed: examples/deepspeed/ds_z3_config.json  # deepspeed
 
 ### dataset
-dataset: magpielm-v0.1  # comma separated datasets, defined in: data/dataset_info.json
+dataset: LIMA  # comma separated datasets, defined in: data/dataset_info.json
 template: llama3  # chat_template
 cutoff_len: 2048
 max_samples: 560000
@@ -23,7 +23,7 @@ overwrite_cache: true
 preprocessing_num_workers: 16
 
 ### output
-output_dir: /minerva_7b_instruct  # output directory
+output_dir: /leonardo_scratch/large/userexternal/apizzi00  # output directory
 logging_steps: 10
 save_steps: 500
 plot_loss: true

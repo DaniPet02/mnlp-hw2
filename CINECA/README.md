@@ -1,7 +1,5 @@
 # Cineca HPC System
 
-
-
 ### Basic Workflow
 
 Login on 
