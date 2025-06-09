@@ -1,6 +1,6 @@
 #!/bin/bash
-USERNAME="apizzi00"
-LOCAL= realpath "./toSync/"
+USERNAME="dpetrini"
+LOCAL=$(realpath "./toSync/")
 LOCAL="$LOCAL/"
 REMOTE="/leonardo/home/userexternal/$USERNAME"
 

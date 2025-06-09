@@ -2,7 +2,6 @@
 
 #SBATCH --nodes=1                    # 1 node 
 #SBATCH --partition=boost_usr_prod   # (3 node, 4-gpuXnode)
-#SBATCH --qos=boost_qos_lprod        # GPU accelerated!
 #SBATCH --cpus-per-task=16            # number of cpu per tasks
 #SBATCH --ntasks-per-node=2          # 1 tasks per nod
 #SBATCH --mem=32024                   # 1GB
